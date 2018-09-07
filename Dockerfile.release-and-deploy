@@ -1,0 +1,30 @@
+FROM bitwalker/distillery:latest as build
+
+MAINTAINER Kentaro Shimatani <peccul@gmail.com>
+
+ENV MIX_ENV=prod \
+    APP_NAME=sample_app \
+    APP_VERSION=0.1.0
+
+WORKDIR /opt/app
+
+COPY ./${APP_NAME} .
+
+RUN \
+   mix release
+
+FROM alpine:3.8
+
+ENV MIX_ENV=prod \
+    APP_NAME=sample_app \
+    APP_VERSION=0.1.0
+
+COPY --from=build /opt/app/_build/prod/rel/${APP_NAME}/releases/${APP_VERSION}/${APP_NAME}.tar.gz .
+
+RUN apk --no-cache upgrade && \
+    # Distillery requires bash
+    apk add --no-cache bash && \
+    # extract into /
+    tar xzf ${APP_NAME}.tar.gz && \
+    rm ${APP_NAME}.tar.gz
+
